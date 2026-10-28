@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Python Editor</title>
+  <meta name="description" content="A simple Python editor that runs in your browser.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233b6fd8'/%3E%3Cpath d='M10 11l-4 5 4 5M22 11l4 5-4 5M18 9l-4 14' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script>
+    // Apply the saved theme before the page paints.
+    try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- CodeMirror 6 from jsDelivr, one exact version per package so every module shares the same copies. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@codemirror/state": "https://cdn.jsdelivr.net/npm/@codemirror/state@6.7.6/dist/index.js",
+      "@codemirror/view": "https://cdn.jsdelivr.net/npm/@codemirror/view@6.43.15/dist/index.js",
+      "@codemirror/language": "https://cdn.jsdelivr.net/npm/@codemirror/language@6.13.1/dist/index.js",
+      "@codemirror/commands": "https://cdn.jsdelivr.net/npm/@codemirror/commands@6.11.1/dist/index.js",
+      "@codemirror/lang-python": "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.2.1/dist/index.js",
+      "@codemirror/autocomplete": "https://cdn.jsdelivr.net/npm/@codemirror/autocomplete@6.20.4/dist/index.js",
+      "@codemirror/streamparser": "https://cdn.jsdelivr.net/npm/@codemirror/streamparser@6.0.0/dist/index.js",
+      "@lezer/common": "https://cdn.jsdelivr.net/npm/@lezer/common@1.5.4/dist/index.js",
+      "@lezer/highlight": "https://cdn.jsdelivr.net/npm/@lezer/highlight@1.2.5/dist/index.js",
+      "@lezer/lr": "https://cdn.jsdelivr.net/npm/@lezer/lr@1.4.11/dist/index.js",
+      "@lezer/python": "https://cdn.jsdelivr.net/npm/@lezer/python@1.1.19/dist/index.js",
+      "style-mod": "https://cdn.jsdelivr.net/npm/style-mod@4.1.4/src/style-mod.js",
+      "w3c-keyname": "https://cdn.jsdelivr.net/npm/w3c-keyname@2.2.8/index.js",
+      "crelt": "https://cdn.jsdelivr.net/npm/crelt@1.0.7/index.js",
+      "@marijn/find-cluster-break": "https://cdn.jsdelivr.net/npm/@marijn/find-cluster-break@1.0.4/src/index.js"
+    }
+  }
+  </script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M10 11l-4 5 4 5M22 11l4 5-4 5M18 9l-4 14" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Python Editor</span>
+    </div>
+
+    <div class="actions">
+      <button id="run" class="btn primary" disabled title="Run main.py (Ctrl+Enter)">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>
+        Run
+      </button>
+      <button id="stop" class="btn" disabled title="Stop the program">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5" fill="currentColor"/></svg>
+        Stop
+      </button>
+    </div>
+
+    <div id="status" class="status" data-kind="loading" role="status">
+      <span class="status-dot"></span><span id="status-text">Loading…</span>
+    </div>
+
+    <button id="theme-toggle" class="icon-btn" title="Switch light / dark theme" aria-label="Switch theme">
+      <svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    </button>
+  </header>
+
+  <main class="layout">
+    <aside id="sidebar" class="pane sidebar">
+      <div class="pane-head">
+        <span class="pane-title">Files</span>
+        <button id="new-file" class="icon-btn small" title="New file" aria-label="New file">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button id="upload" class="icon-btn small" title="Upload files from your computer" aria-label="Upload files">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10.5V2.5M4.8 5.5 8 2.3l3.2 3.2M2.5 10.5v3h11v-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <input id="file-input" type="file" multiple hidden accept=".py,.txt,.csv,.json,.md,.dat,text/*">
+      </div>
+      <ul id="file-list" class="file-list"></ul>
+      <p class="drop-hint">Drop files here to add them</p>
+    </aside>
+
+    <section id="editor-pane" class="pane editor-pane">
+      <div class="pane-head"><span id="editor-title" class="pane-title">main.py</span></div>
+      <div id="editor" class="editor"></div>
+      <div class="drop-overlay">Drop to add and open</div>
+    </section>
+
+    <div id="splitter" class="splitter" role="separator" aria-orientation="vertical"
+         aria-label="Resize editor and console" title="Drag to resize · double-click to reset" tabindex="0"></div>
+
+    <section class="pane console-pane">
+      <div class="pane-head">
+        <span class="pane-title">Console</span>
+        <button id="clear-console" class="btn ghost small" title="Clear the console">Clear</button>
+      </div>
+      <div id="console" class="console"><div id="out"></div></div>
+    </section>
+  </main>
+
+  <dialog id="dialog">
+    <form id="dialog-form" method="dialog">
+      <p id="dialog-message"></p>
+      <input id="dialog-input" type="text" spellcheck="false" autocomplete="off">
+      <p id="dialog-error" class="dialog-error"></p>
+      <div class="dialog-actions">
+        <button id="dialog-ok" class="btn primary" value="ok">OK</button>
+        <button id="dialog-cancel" class="btn" value="cancel" formnovalidate>Cancel</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
