@@ -468,6 +468,27 @@ function updateButtons() {
   $('stop').disabled = !state.running;
 }
 
+// ---------- Loading lightbox (first load only) ----------
+
+function loaderStep(text) {
+  $('loader-step').textContent = text;
+}
+
+function hideLoader() {
+  $('loader').classList.add('done');
+}
+
+function loaderFailed(text) {
+  const loader = $('loader');
+  if (loader.classList.contains('done')) return; // Python had loaded before; the console shows the error
+  loader.classList.add('failed');
+  loader.querySelector('.loader-title').textContent = 'Python could not be loaded';
+  loaderStep(text);
+  const btn = $('loader-reload');
+  btn.hidden = false;
+  btn.onclick = () => location.reload();
+}
+
 function startWorker() {
   state.ready = false;
   updateButtons();
@@ -477,6 +498,7 @@ function startWorker() {
   worker.onmessage = (e) => handleWorkerMessage(worker, e.data);
   worker.onerror = (e) => {
     setStatus('error', 'Python failed to start');
+    loaderFailed('Check your internet connection and try again.');
     write(`Python could not start: ${e.message || 'worker error'}\n`, 'error');
   };
   worker.postMessage({ type: 'init', inputAvailable: state.inputAvailable });
@@ -485,14 +507,19 @@ function startWorker() {
 function handleWorkerMessage(worker, msg) {
   if (worker !== state.worker) return; // message from a stopped worker
   switch (msg.type) {
+    case 'progress':
+      loaderStep(msg.text);
+      break;
     case 'ready':
       state.ready = true;
       state.version = msg.version;
       setStatus('ready', `Python ${msg.version}`);
       updateButtons();
+      hideLoader();
       break;
     case 'initError':
       setStatus('error', 'Python failed to load');
+      loaderFailed('Check your internet connection and try again.');
       write(`Python could not be loaded: ${msg.message}\nCheck your internet connection and reload the page.\n`, 'error');
       break;
     case 'out':
@@ -737,6 +764,7 @@ async function main() {
   write('Press Run (Ctrl+Enter) to run main.py.\n', 'info');
 
   // Python
+  loaderStep('Preparing the input channel…');
   state.inputAvailable = await setupInputChannel();
   if (!state.inputAvailable) {
     write('Note: input() will not work here. Open this page through a web server (http/https), not as a file.\n', 'stderr');

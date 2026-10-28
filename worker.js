@@ -4,7 +4,7 @@
 //   {type: 'init', inputAvailable}   load Pyodide
 //   {type: 'run', files}             write files, run main.py, send back the files
 // Messages to the page:
-//   {type: 'ready', version} | {type: 'initError', message}
+//   {type: 'progress', text} | {type: 'ready', version} | {type: 'initError', message}
 //   {type: 'out', stream: 'stdout'|'stderr', text}
 //   {type: 'inputRequest', id}
 //   {type: 'done', error, exitMessage, files, elapsed}
@@ -181,8 +181,10 @@ function readFiles() {
 async function init(msg) {
   inputAvailable = !!msg.inputAvailable;
   try {
+    postMessage({ type: 'progress', text: 'Downloading the Python runtime…' });
     importScripts(`${PYODIDE_URL}pyodide.js`);
     pyodide = await loadPyodide({ indexURL: PYODIDE_URL });
+    postMessage({ type: 'progress', text: 'Starting Python…' });
     pyodide.setStdout(makeWriter('stdout'));
     pyodide.setStderr(makeWriter('stderr'));
     pyodide.runPython(PY_SETUP);

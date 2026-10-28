@@ -110,6 +110,7 @@
 
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body { height: 100%; margin: 0; }
 
@@ -393,6 +394,98 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
 .dialog-error { min-height: 1.4em; margin: 6px 0 10px; color: var(--out-error); font-size: 13px; }
 #dialog-input[hidden] + .dialog-error { display: none; }
 .dialog-actions { display: flex; flex-direction: row-reverse; gap: 8px; }
+
+/* ---------- Loading lightbox ---------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity .35s ease, visibility .35s;
+}
+.loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.loader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(340px, 100%);
+  padding: 32px 28px 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 20px 60px rgb(0 0 0 / .22);
+  text-align: center;
+}
+
+.py-logo {
+  width: 92px;
+  height: 92px;
+  margin-bottom: 6px;
+  overflow: visible;
+  animation: py-float 2.4s ease-in-out infinite;
+}
+.py-blue { fill: #3776ab; }
+.py-yellow { fill: #ffd43b; }
+/* The two snakes slide apart and back together. */
+.py-half { animation: py-split 1.6s ease-in-out infinite; }
+@keyframes py-split {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-5px, -5px); }
+}
+@keyframes py-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(-6deg); }
+}
+
+.loader-title { font-size: 17px; font-weight: 600; }
+.dots span { animation: dot 1.2s infinite; opacity: 0; }
+.dots span:nth-child(2) { animation-delay: .2s; }
+.dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes dot { 30%, 60% { opacity: 1; } }
+
+.loader-step { min-height: 1.4em; color: var(--muted); font-size: 13px; }
+
+.loader-bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--hover);
+  overflow: hidden;
+}
+.loader-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3776ab, #ffd43b);
+  animation: bar 1.3s ease-in-out infinite;
+}
+@keyframes bar {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+.loader.failed .py-logo,
+.loader.failed .py-half,
+.loader.failed .dots span { animation: none; opacity: 1; }
+.loader.failed .py-logo { filter: grayscale(1); opacity: .6; }
+.loader.failed .loader-bar { display: none; }
+.loader.failed .loader-step { color: var(--out-error); }
+#loader-reload { margin-top: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .py-logo, .py-half, .loader-bar span { animation-duration: 3s; }
+  .py-logo { animation: none; }
+}
 
 /* ---------- Small screens ---------- */
 @media (max-width: 860px) {
