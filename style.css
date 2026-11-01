@@ -213,6 +213,12 @@ button:disabled { cursor: default; opacity: .45; }
   padding: 8px;
 }
 .sidebar { margin-right: 8px; }
+/* File list hidden: its column shrinks to nothing and the editor takes the space. */
+.layout.sidebar-hidden { --sidebar-w: 0px; }
+/* Kept in the grid (so the other panes stay in their columns), just invisible. */
+.layout.sidebar-hidden .sidebar { visibility: hidden; margin-right: 0; border-width: 0; }
+.editor-pane .pane-head { padding-left: 6px; }
+#sidebar-toggle[aria-expanded="false"] { color: var(--accent); }
 
 /* ---------- Splitter ---------- */
 .splitter {
@@ -494,6 +500,7 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
   .brand span { display: none; }
   .layout { grid-template-columns: 1fr; grid-auto-rows: auto; padding: 8px 16px 16px; }
   .sidebar { max-height: 30vh; margin-right: 0; }
+  .layout.sidebar-hidden .sidebar { display: none; }
   .splitter { display: none; }
   .drop-hint { display: none; }
   .editor-pane { height: 55vh; }

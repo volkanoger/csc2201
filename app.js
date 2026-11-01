@@ -722,6 +722,24 @@ function setupSplitter() {
 }
 
 // ============================================================
+// Show / hide the file list
+// ============================================================
+
+function setSidebarHidden(hidden) {
+  document.querySelector('.layout').classList.toggle('sidebar-hidden', hidden);
+  const btn = $('sidebar-toggle');
+  const label = hidden ? 'Show files' : 'Hide files';
+  btn.setAttribute('aria-expanded', String(!hidden));
+  btn.setAttribute('aria-label', label);
+  btn.title = `${label} (Ctrl+B)`;
+  lsSet('sidebarHidden', hidden ? '1' : '0');
+}
+
+function toggleSidebar() {
+  setSidebarHidden(!document.querySelector('.layout').classList.contains('sidebar-hidden'));
+}
+
+// ============================================================
 // Start
 // ============================================================
 
@@ -737,8 +755,14 @@ async function main() {
   });
   $('clear-console').addEventListener('click', clearConsole);
   $('theme-toggle').addEventListener('click', toggleTheme);
+  $('sidebar-toggle').addEventListener('click', toggleSidebar);
+  if (lsGet('sidebarHidden') === '1') setSidebarHidden(true);
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      toggleSidebar();
+    }
   });
 
   setupSplitter();
