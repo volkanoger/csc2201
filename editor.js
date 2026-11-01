@@ -3,8 +3,8 @@
 
 import { EditorState, StateEffect, StateField } from '@codemirror/state';
 import {
-  EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
-  highlightSpecialChars, drawSelection, Decoration,
+  EditorView, keymap, lineNumbers, highlightActiveLineGutter,
+  highlightSpecialChars, drawSelection, Decoration, ViewPlugin,
 } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import {
@@ -60,6 +60,24 @@ const errorLineField = StateField.define({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+// ---------- Active line ----------
+// Like highlightActiveLine(), but off while text is selected. The active line's
+// background would otherwise cover the selection drawn behind it.
+
+const activeLineMark = Decoration.line({ class: 'cm-activeLine' });
+
+const activeLineWhenEmpty = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = this.build(view); }
+  update(u) {
+    if (u.docChanged || u.selectionSet) this.decorations = this.build(u.view);
+  }
+  build(view) {
+    const sel = view.state.selection.main;
+    if (!sel.empty) return Decoration.none;
+    return Decoration.set([activeLineMark.range(view.state.doc.lineAt(sel.head).from)]);
+  }
+}, { decorations: (v) => v.decorations });
+
 // ---------- Editor ----------
 
 export function createEditor(parent, { onChange, onRun }) {
@@ -73,7 +91,7 @@ export function createEditor(parent, { onChange, onRun }) {
       highlightSpecialChars(),
       history(),
       drawSelection(),
-      highlightActiveLine(),
+      activeLineWhenEmpty,
       indentUnit.of('    '),
       EditorState.tabSize.of(4),
       keymap.of([
